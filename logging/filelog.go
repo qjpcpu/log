@@ -68,8 +68,11 @@ func (w *FileLogWriter) openFile() error {
 		return err
 	}
 	w.file = fd
-	os.Remove(w.filename)
-	os.Symlink(w.realFilename, w.filename)
+	linkto, _ := os.Readlink(w.filename)
+	if linkto == "" || filepath.Base(linkto) != filepath.Base(w.realFilename) {
+		os.Remove(w.filename)
+		os.Symlink(filepath.Base(w.realFilename), w.filename)
+	}
 	return nil
 }
 
@@ -91,10 +94,12 @@ func (w *FileLogWriter) needRotate() bool {
 func (w *FileLogWriter) Write(p []byte) (int, error) {
 	if w.needRotate() {
 		w.writeMtx.Lock()
-		if err := w.Rotate(); err != nil {
-			fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.filename, err)
-			w.writeMtx.Unlock()
-			return 0, err
+		if w.needRotate() {
+			if err := w.Rotate(); err != nil {
+				fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.filename, err)
+				w.writeMtx.Unlock()
+				return 0, err
+			}
 		}
 		w.writeMtx.Unlock()
 	}

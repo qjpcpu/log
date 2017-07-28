@@ -7,7 +7,7 @@
 package runtime
 
 import (
-	"third/goroutine/hack/go1_6/runtime/internal/sys"
+	"github.com/qjpcpu/log/goroutine/hack/go1_6/runtime/internal/sys"
 )
 
 // A parfor holds state for the parallel for operation.

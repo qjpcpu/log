@@ -9,7 +9,7 @@
 package runtime
 
 import (
-	"third/goroutine/hack/go1_7_2/runtime/internal/sys"
+	"github.com/qjpcpu/log/goroutine/hack/go1_7_2/runtime/internal/sys"
 	"unsafe"
 )
 

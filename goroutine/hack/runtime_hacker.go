@@ -7,8 +7,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/huandu/goroutine/copyright"
-	"github.com/huandu/goroutine/version"
+	"github.com/qjpcpu/log/goroutine/copyright"
+	"github.com/qjpcpu/log/goroutine/version"
 )
 
 type RuntimeHacker struct{}

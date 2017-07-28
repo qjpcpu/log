@@ -7,19 +7,25 @@ package goroutine
 import (
 	"unsafe"
 
-	runtime1_5 "third/goroutine/hack/go1_5/runtime"
-	runtime1_5_1 "third/goroutine/hack/go1_5_1/runtime"
-	runtime1_5_2 "third/goroutine/hack/go1_5_2/runtime"
-	runtime1_5_3 "third/goroutine/hack/go1_5_3/runtime"
-	runtime1_5_4 "third/goroutine/hack/go1_5_4/runtime"
-	runtime1_6 "third/goroutine/hack/go1_6/runtime"
-	runtime1_6_1 "third/goroutine/hack/go1_6_1/runtime"
-	runtime1_6_2 "third/goroutine/hack/go1_6_2/runtime"
-	runtime1_6_3 "third/goroutine/hack/go1_6_3/runtime"
-	runtime1_7 "third/goroutine/hack/go1_7/runtime"
-	runtime1_7_1 "third/goroutine/hack/go1_7_1/runtime"
-	runtime1_7_2 "third/goroutine/hack/go1_7_2/runtime"
-	runtime1_7_3 "third/goroutine/hack/go1_7_3/runtime"
+	runtime1_5 "github.com/qjpcpu/log/goroutine/hack/go1_5/runtime"
+	runtime1_5_1 "github.com/qjpcpu/log/goroutine/hack/go1_5_1/runtime"
+	runtime1_5_2 "github.com/qjpcpu/log/goroutine/hack/go1_5_2/runtime"
+	runtime1_5_3 "github.com/qjpcpu/log/goroutine/hack/go1_5_3/runtime"
+	runtime1_5_4 "github.com/qjpcpu/log/goroutine/hack/go1_5_4/runtime"
+	runtime1_6 "github.com/qjpcpu/log/goroutine/hack/go1_6/runtime"
+	runtime1_6_1 "github.com/qjpcpu/log/goroutine/hack/go1_6_1/runtime"
+	runtime1_6_2 "github.com/qjpcpu/log/goroutine/hack/go1_6_2/runtime"
+	runtime1_6_3 "github.com/qjpcpu/log/goroutine/hack/go1_6_3/runtime"
+	runtime1_7 "github.com/qjpcpu/log/goroutine/hack/go1_7/runtime"
+	runtime1_7_1 "github.com/qjpcpu/log/goroutine/hack/go1_7_1/runtime"
+	runtime1_7_2 "github.com/qjpcpu/log/goroutine/hack/go1_7_2/runtime"
+	runtime1_7_3 "github.com/qjpcpu/log/goroutine/hack/go1_7_3/runtime"
+	runtime1_7_4 "github.com/qjpcpu/log/goroutine/hack/go1_7_4/runtime"
+	runtime1_7_5 "github.com/qjpcpu/log/goroutine/hack/go1_7_5/runtime"
+	runtime1_8 "github.com/qjpcpu/log/goroutine/hack/go1_8/runtime"
+	runtime1_8_1 "github.com/qjpcpu/log/goroutine/hack/go1_8_1/runtime"
+	runtime1_8_2 "github.com/qjpcpu/log/goroutine/hack/go1_8_2/runtime"
+	runtime1_8_3 "github.com/qjpcpu/log/goroutine/hack/go1_8_3/runtime"
 )
 
 func getg() unsafe.Pointer
@@ -56,6 +62,18 @@ func GoroutineId() int64 {
 		return (*runtime1_7_2.Goroutine)(gp).Goid()
 	case _GO_VERSION1_7_3:
 		return (*runtime1_7_3.Goroutine)(gp).Goid()
+	case _GO_VERSION1_7_4:
+		return (*runtime1_7_4.Goroutine)(gp).Goid()
+	case _GO_VERSION1_7_5:
+		return (*runtime1_7_5.Goroutine)(gp).Goid()
+	case _GO_VERSION1_8:
+		return (*runtime1_8.Goroutine)(gp).Goid()
+	case _GO_VERSION1_8_1:
+		return (*runtime1_8_1.Goroutine)(gp).Goid()
+	case _GO_VERSION1_8_2:
+		return (*runtime1_8_2.Goroutine)(gp).Goid()
+	case _GO_VERSION1_8_3:
+		return (*runtime1_8_3.Goroutine)(gp).Goid()
 
 	default:
 		panic("unsupported go version " + goVersion().String())

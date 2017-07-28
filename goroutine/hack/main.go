@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/huandu/goroutine/version"
+	"github.com/qjpcpu/log/goroutine/version"
 )
 
 var (

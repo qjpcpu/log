@@ -67,7 +67,7 @@
 package runtime
 
 import (
-	"third/goroutine/hack/go1_6_2/runtime/internal/sys"
+	"github.com/qjpcpu/log/goroutine/hack/go1_6_2/runtime/internal/sys"
 )
 
 const (

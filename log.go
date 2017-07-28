@@ -4,16 +4,22 @@ import (
 	"github.com/qjpcpu/log/logging"
 	syslog "log"
 	"os"
+	"path/filepath"
 )
 
+// package global variables
+var lg *logging.Logger
+var setLogLevel func(Level)
+var log_option = defaultLogOption()
+
 const (
-	NormFormat = "%{level}: [%{time:2006-01-02 15:04:05.000}][%{pid}][%{goroutineid}/%{goroutinecount}][%{shortfile}][%{message}]"
+	NormFormat = "%{level}: [%{time:2006-01-02 15:04:05.000}][%{goroutineid}/%{goroutinecount}][%{shortfile}][%{message}]"
 )
 
 type Level int
 
 const (
-	CRITICAL Level = iota
+	CRITICAL Level = iota + 1
 	ERROR
 	WARNING
 	NOTICE
@@ -21,9 +27,12 @@ const (
 	DEBUG
 )
 
+func (lvl Level) loggingLevel() logging.Level {
+	return logging.Level(lvl - 1)
+}
+
 type LogOption struct {
 	LogFile    string
-	LogDir     string
 	Level      Level
 	Format     string
 	RotateType logging.RotateType
@@ -37,8 +46,6 @@ func defaultLogOption() LogOption {
 	}
 }
 
-var lg *logging.Logger
-
 func init() {
 	InitLog(defaultLogOption())
 }
@@ -47,11 +54,14 @@ func InitLog(opt LogOption) {
 	if opt.Format == "" {
 		opt.Format = NormFormat
 	}
+	if opt.Level <= 0 {
+		opt.Level = INFO
+	}
 	format := logging.MustStringFormatter(opt.Format)
-	// mkdir log dir
-	if opt.LogDir != "" && opt.LogFile != "" {
-		os.MkdirAll(opt.LogDir, 0777)
-		filename := opt.LogDir + "/" + opt.LogFile
+	if opt.LogFile != "" {
+		// mkdir log dir
+		os.MkdirAll(filepath.Dir(opt.LogFile), 0777)
+		filename := opt.LogFile
 		info_log_fp, err := logging.NewFileLogWriter(filename, opt.RotateType)
 		if err != nil {
 			syslog.Fatalf("open file[%s] failed[%s]", filename, err)
@@ -68,22 +78,30 @@ func InitLog(opt LogOption) {
 		backend_err_formatter := logging.NewBackendFormatter(backend_err, format)
 
 		backend_info_leveld := logging.AddModuleLevel(backend_info_formatter)
-		backend_info_leveld.SetLevel(logging.Level(opt.Level), "")
+		backend_info_leveld.SetLevel(opt.Level.loggingLevel(), "")
 
 		backend_err_leveld := logging.AddModuleLevel(backend_err_formatter)
 		backend_err_leveld.SetLevel(logging.ERROR, "")
 		logging.SetBackend(backend_info_leveld, backend_err_leveld)
 
+		// set log level handler
+		setLogLevel = func(lvl Level) {
+			backend_info_leveld.SetLevel(lvl.loggingLevel(), "")
+		}
 	} else {
 		backend1 := logging.NewLogBackend(os.Stderr, "", 0)
-		backend2 := logging.NewLogBackend(os.Stderr, "", 0)
-		backend2Formatter := logging.NewBackendFormatter(backend2, format)
-		backend1Leveled := logging.AddModuleLevel(backend1)
-		backend1Leveled.SetLevel(logging.Level(opt.Level), "")
-		logging.SetBackend(backend1Leveled, backend2Formatter)
+		backend1Formatter := logging.NewBackendFormatter(backend1, format)
+		backend1Leveled := logging.AddModuleLevel(backend1Formatter)
+		backend1Leveled.SetLevel(opt.Level.loggingLevel(), "")
+		logging.SetBackend(backend1Leveled)
+		// set log level handler
+		setLogLevel = func(lvl Level) {
+			backend1Leveled.SetLevel(lvl.loggingLevel(), "")
+		}
 	}
 	lg = logging.MustGetLogger("")
 	lg.ExtraCalldepth += 1
+	log_option = opt
 }
 
 func Info(format string, args ...interface{}) {
@@ -91,4 +109,50 @@ func Info(format string, args ...interface{}) {
 		return
 	}
 	lg.Infof(format, args...)
+}
+
+func Warning(format string, args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Warningf(format, args...)
+}
+
+func Critical(format string, args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Criticalf(format, args...)
+}
+
+func Error(format string, args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Errorf(format, args...)
+}
+
+func Debug(format string, args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Debugf(format, args...)
+}
+
+func Notice(format string, args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Noticef(format, args...)
+}
+
+func SetLogLevel(lvl Level) {
+	if setLogLevel != nil {
+		setLogLevel(lvl)
+		log_option.Level = lvl
+	}
+}
+
+func GetLogLevel() Level {
+	return log_option.Level
 }
