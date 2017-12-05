@@ -5,6 +5,7 @@ import (
 	syslog "log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // package global variables
@@ -104,46 +105,88 @@ func InitLog(opt LogOption) {
 	log_option = opt
 }
 
-func Info(format string, args ...interface{}) {
+func Infof(format string, args ...interface{}) {
 	if lg == nil {
 		return
 	}
 	lg.Infof(format, args...)
 }
 
-func Warning(format string, args ...interface{}) {
+func Warningf(format string, args ...interface{}) {
 	if lg == nil {
 		return
 	}
 	lg.Warningf(format, args...)
 }
 
-func Critical(format string, args ...interface{}) {
+func Criticalf(format string, args ...interface{}) {
 	if lg == nil {
 		return
 	}
 	lg.Criticalf(format, args...)
 }
 
-func Error(format string, args ...interface{}) {
+func Errorf(format string, args ...interface{}) {
 	if lg == nil {
 		return
 	}
 	lg.Errorf(format, args...)
 }
 
-func Debug(format string, args ...interface{}) {
+func Debugf(format string, args ...interface{}) {
 	if lg == nil {
 		return
 	}
 	lg.Debugf(format, args...)
 }
 
-func Notice(format string, args ...interface{}) {
+func Noticef(format string, args ...interface{}) {
 	if lg == nil {
 		return
 	}
 	lg.Noticef(format, args...)
+}
+
+func Info(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
+func Warning(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
+func Critical(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
+func Error(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
+func Debug(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
+func Notice(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func SetLogLevel(lvl Level) {

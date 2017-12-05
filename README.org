@@ -10,11 +10,11 @@ import (
 
 func main() {
 	log.SetLogLevel(log.INFO)
-	log.Info("this is  %s", "info log1")
-	log.Debug("this is %s", "debug log1")
+	log.Infof("this is  %s", "info log1")
+	log.Debugf("this is %s", "debug log1")
 	log.SetLogLevel(log.DEBUG)
-	log.Info("this is  %s", "info log2")
-	log.Debug("this is  %s", "debug log2")
+	log.Infof("this is  %s", "info log2")
+	log.Debugf("this is  %s", "debug log2")
 }
 #+END_SRC
 
@@ -32,10 +32,10 @@ func main() {
 	 	LogFile: "./log/access.log",
 	})
 	log.SetLogLevel(log.INFO)
-	log.Info("this is  %s", "info log1")
-	log.Debug("this is %s", "debug log1")
+	log.Infof("this is  %s", "info log1")
+	log.Debugf("this is %s", "debug log1")
 	log.SetLogLevel(log.DEBUG)
-	log.Info("this is  %s", "info log2")
-	log.Debug("this is  %s", "debug log2")
+	log.Infof("this is  %s", "info log2")
+	log.Debugf("this is  %s", "debug log2")
 }
 #+END_SRC
