@@ -2,6 +2,11 @@
 
 [![Build Status](https://travis-ci.org/huandu/goroutine.png?branch=master)](https://travis-ci.org/huandu/goroutine)
 
+**[DEPRECATED]**
+
+* If you're still looking for a solution to get goroutine id, please go to https://github.com/v2pro/plz/tree/master/gls.
+* If you're looking for a package to create TLS or local storage for a goroutine transparently, use https://github.com/huandu/go-tls.
+
 Package goroutine is merely a hack.
 It exports goroutine id to outside so that you can use it for whatever purpose.
 However, it's highly recommended to not use this package in your daily life.
@@ -37,6 +42,8 @@ Tested platforms.
     * go1.7.5
     * go1.8
     * go1.8.1
+    * go1.9
+    * go1.9.2
 * Travis CI (See https://travis-ci.org/huandu/goroutine)
     * go1.5
     * go1.5.1
@@ -57,6 +64,9 @@ Tested platforms.
     * go1.8.1
     * go1.8.2
     * go1.8.3
+    * go1.9
+    * go1.9.1
+    * go1.9.2
 
 ## How it works ##
 

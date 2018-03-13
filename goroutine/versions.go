@@ -34,6 +34,9 @@ const (
 	_GO_VERSION1_8_1
 	_GO_VERSION1_8_2
 	_GO_VERSION1_8_3
+	_GO_VERSION1_9
+	_GO_VERSION1_9_1
+	_GO_VERSION1_9_2
 )
 
 var (
@@ -86,6 +89,12 @@ func init() {
 		_goVersionCode = _GO_VERSION1_8_2
 	} else if _goVersion.Equal("1", "8", "3") {
 		_goVersionCode = _GO_VERSION1_8_3
+	} else if _goVersion.Equal("1", "9") {
+		_goVersionCode = _GO_VERSION1_9
+	} else if _goVersion.Equal("1", "9", "1") {
+		_goVersionCode = _GO_VERSION1_9_1
+	} else if _goVersion.Equal("1", "9", "2") {
+		_goVersionCode = _GO_VERSION1_9_2
 	}
 }
 
