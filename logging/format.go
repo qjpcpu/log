@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/qjpcpu/log/goroutine"
+	"github.com/huandu/go-tls"
 	"io"
 	"os"
 	"path"
@@ -427,6 +427,5 @@ func (bf *backendFormatter) Log(level Level, calldepth int, r *Record) error {
 }
 
 func getGoroutineId() string {
-	var id int64 = goroutine.GoroutineId()
-	return strconv.FormatInt(id, 10)
+	return fmt.Sprint(tls.ID())
 }
