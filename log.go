@@ -52,6 +52,13 @@ func ParseLogLevel(lstr string) Level {
 	}
 }
 
+type LogOption struct {
+	LogFile    string
+	Level      Level
+	Format     string
+	RotateType logging.RotateType
+}
+
 func defaultLogOption() LogOption {
 	return LogOption{
 		Level:      DEBUG,
