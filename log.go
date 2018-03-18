@@ -32,11 +32,24 @@ func (lvl Level) loggingLevel() logging.Level {
 	return logging.Level(lvl - 1)
 }
 
-type LogOption struct {
-	LogFile    string
-	Level      Level
-	Format     string
-	RotateType logging.RotateType
+func ParseLogLevel(lstr string) Level {
+	lstr = strings.ToLower(lstr)
+	switch lstr {
+	case "critical":
+		return CRITICAL
+	case "error":
+		return ERROR
+	case "warning":
+		return WARNING
+	case "notice":
+		return NOTICE
+	case "info":
+		return INFO
+	case "debug":
+		return DEBUG
+	default:
+		return INFO
+	}
 }
 
 func defaultLogOption() LogOption {
