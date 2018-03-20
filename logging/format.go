@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/huandu/go-tls"
 	"io"
 	"os"
 	"path"
@@ -427,5 +426,6 @@ func (bf *backendFormatter) Log(level Level, calldepth int, r *Record) error {
 }
 
 func getGoroutineId() string {
-	return fmt.Sprint(tls.ID())
+	// not get it for now
+	return "*"
 }
