@@ -57,6 +57,7 @@ type LogOption struct {
 	Level      Level
 	Format     string
 	RotateType logging.RotateType
+	files      []*logging.FileLogWriter
 }
 
 func defaultLogOption() LogOption {
@@ -72,6 +73,14 @@ func init() {
 }
 
 func InitLog(opt LogOption) {
+	if len(log_option.files) > 0 {
+		for _, f := range log_option.files {
+			if f != nil {
+				f.Close()
+			}
+		}
+		log_option.files = nil
+	}
 	if opt.Format == "" {
 		opt.Format = NormFormat
 	}
@@ -92,6 +101,7 @@ func InitLog(opt LogOption) {
 		if err != nil {
 			syslog.Fatalf("open file[%s.wf] failed[%s]", filename, err)
 		}
+		opt.files = []*logging.FileLogWriter{info_log_fp, err_log_fp}
 
 		backend_info := logging.NewLogBackend(info_log_fp, "", 0)
 		backend_err := logging.NewLogBackend(err_log_fp, "", 0)
