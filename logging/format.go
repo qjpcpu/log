@@ -425,7 +425,14 @@ func (bf *backendFormatter) Log(level Level, calldepth int, r *Record) error {
 	return bf.b.Log(level, calldepth+1, &r2)
 }
 
+// Should only used for debug
 func getGoroutineId() string {
-	// not get it for now
-	return "*"
+	buf := make([]byte, 1<<16)
+	runtime.Stack(buf, false)
+	tokens := strings.Split(string(buf), " ")
+	if len(tokens) > 1 {
+		return tokens[1]
+	} else {
+		return ""
+	}
 }
