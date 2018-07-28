@@ -135,6 +135,26 @@ func InitLog(opt LogOption) {
 	log_option = opt
 }
 
+func isformat(format string) bool {
+	end := len(format)
+	unfound := -2
+	var istag int = unfound
+	for i := 0; i < end; i++ {
+		if format[i] == '%' {
+			if istag == i-1 {
+				istag = unfound
+			} else {
+				istag = i
+			}
+		} else {
+			if istag == i-1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func Infof(format string, args ...interface{}) {
 	if lg == nil {
 		return
@@ -177,46 +197,84 @@ func Noticef(format string, args ...interface{}) {
 	lg.Noticef(format, args...)
 }
 
+func isformatLog(args ...interface{}) bool {
+	for loop := true; loop; loop = false {
+		if len(args) <= 1 {
+			break
+		}
+		format, ok := args[0].(string)
+		if !ok {
+			break
+		}
+		return isformat(format)
+	}
+	return false
+}
+
 func Info(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	lg.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	if isformatLog(args...) {
+		lg.Infof(args[0].(string), args[1:]...)
+	} else {
+		lg.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	}
 }
 
 func Warning(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	lg.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	if isformatLog(args...) {
+		lg.Warningf(args[0].(string), args[1:]...)
+	} else {
+		lg.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	}
 }
 
 func Critical(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	if isformatLog(args...) {
+		lg.Criticalf(args[0].(string), args[1:]...)
+	} else {
+		lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	}
 }
 
 func Error(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	lg.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	if isformatLog(args...) {
+		lg.Errorf(args[0].(string), args[1:]...)
+	} else {
+		lg.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	}
 }
 
 func Debug(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	lg.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	if isformatLog(args...) {
+		lg.Debugf(args[0].(string), args[1:]...)
+	} else {
+		lg.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	}
 }
 
 func Notice(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	if isformatLog(args...) {
+		lg.Noticef(args[0].(string), args[1:]...)
+	} else {
+		lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	}
 }
 
 func SetLogLevel(lvl Level) {
