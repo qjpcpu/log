@@ -53,18 +53,20 @@ func ParseLogLevel(lstr string) Level {
 }
 
 type LogOption struct {
-	LogFile    string
-	Level      Level
-	Format     string
-	RotateType logging.RotateType
-	files      []*logging.FileLogWriter
+	LogFile        string
+	Level          Level
+	Format         string
+	RotateType     logging.RotateType
+	CreateShortcut bool
+	files          []*logging.FileLogWriter
 }
 
 func defaultLogOption() LogOption {
 	return LogOption{
-		Level:      DEBUG,
-		Format:     NormFormat,
-		RotateType: logging.RotateDaily,
+		Level:          DEBUG,
+		Format:         NormFormat,
+		RotateType:     logging.RotateDaily,
+		CreateShortcut: true,
 	}
 }
 
@@ -92,12 +94,12 @@ func InitLog(opt LogOption) {
 		// mkdir log dir
 		os.MkdirAll(filepath.Dir(opt.LogFile), 0777)
 		filename := opt.LogFile
-		info_log_fp, err := logging.NewFileLogWriter(filename, opt.RotateType)
+		info_log_fp, err := logging.NewFileLogWriter(filename, opt.RotateType, opt.CreateShortcut)
 		if err != nil {
 			syslog.Fatalf("open file[%s] failed[%s]", filename, err)
 		}
 
-		err_log_fp, err := logging.NewFileLogWriter(filename+".wf", opt.RotateType)
+		err_log_fp, err := logging.NewFileLogWriter(filename+".wf", opt.RotateType, opt.CreateShortcut)
 		if err != nil {
 			syslog.Fatalf("open file[%s.wf] failed[%s]", filename, err)
 		}

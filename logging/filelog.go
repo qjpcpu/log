@@ -9,11 +9,12 @@ import (
 )
 
 type FileLogWriter struct {
-	filename     string
-	file         *os.File
-	writeMtx     *sync.Mutex
-	rt           RotateType
-	realFilename string
+	filename       string
+	file           *os.File
+	writeMtx       *sync.Mutex
+	rt             RotateType
+	realFilename   string
+	createShortcut bool
 }
 
 type RotateType int
@@ -42,17 +43,18 @@ func logFilename(filename string, rt RotateType) string {
 	}
 }
 
-func NewFileLogWriter(filename string, rt RotateType) (*FileLogWriter, error) {
+func NewFileLogWriter(filename string, rt RotateType, createShortcut bool) (*FileLogWriter, error) {
 	f, err := filepath.Abs(filename)
 	if err != nil {
 		return nil, err
 	}
 	filename = f
 	w := &FileLogWriter{
-		filename:     filename,
-		writeMtx:     &sync.Mutex{},
-		rt:           rt,
-		realFilename: logFilename(filename, rt),
+		filename:       filename,
+		writeMtx:       &sync.Mutex{},
+		rt:             rt,
+		realFilename:   logFilename(filename, rt),
+		createShortcut: createShortcut,
 	}
 	if err := w.openFile(); err != nil {
 		return nil, err
@@ -68,10 +70,12 @@ func (w *FileLogWriter) openFile() error {
 		return err
 	}
 	w.file = fd
-	linkto, _ := os.Readlink(w.filename)
-	if linkto == "" || filepath.Base(linkto) != filepath.Base(w.realFilename) {
-		os.Remove(w.filename)
-		os.Symlink(filepath.Base(w.realFilename), w.filename)
+	if w.createShortcut {
+		linkto, _ := os.Readlink(w.filename)
+		if linkto == "" || filepath.Base(linkto) != filepath.Base(w.realFilename) {
+			os.Remove(w.filename)
+			os.Symlink(filepath.Base(w.realFilename), w.filename)
+		}
 	}
 	return nil
 }
