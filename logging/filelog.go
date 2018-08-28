@@ -2,6 +2,7 @@ package logging
 
 import (
 	"fmt"
+	"github.com/qjpcpu/atomswitch"
 	"os"
 	"path/filepath"
 	"sync"
@@ -10,7 +11,7 @@ import (
 
 type FileLogWriter struct {
 	filename       string
-	file           *os.File
+	file           atomswitch.Switcher
 	writeMtx       *sync.Mutex
 	rt             RotateType
 	realFilename   string
@@ -55,6 +56,7 @@ func NewFileLogWriter(filename string, rt RotateType, createShortcut bool) (*Fil
 		rt:             rt,
 		realFilename:   logFilename(filename, rt),
 		createShortcut: createShortcut,
+		file:           atomswitch.NewAtomicSwitcher(new(os.File)),
 	}
 	if err := w.openFile(); err != nil {
 		return nil, err
@@ -69,7 +71,9 @@ func (w *FileLogWriter) openFile() error {
 	if err != nil {
 		return err
 	}
-	w.file = fd
+	if err = w.file.Put(fd); err != nil {
+		return err
+	}
 	if w.createShortcut {
 		linkto, _ := os.Readlink(w.filename)
 		if linkto == "" || filepath.Base(linkto) != filepath.Base(w.realFilename) {
@@ -81,11 +85,12 @@ func (w *FileLogWriter) openFile() error {
 }
 
 // If this is called in a threaded context, it MUST be synchronized
-func (w *FileLogWriter) Rotate() error {
+func (w *FileLogWriter) doRotate() error {
 	// Close any log file that may be open
-	if w.file != nil {
+	fd := w.file.Get().(*os.File)
+	if fd != nil {
 		// fmt.Fprint(w.file, fmt.Sprintf("file logger closed at %s", time.Now().String()))
-		w.file.Close()
+		fd.Close()
 	}
 	// Open the log file
 	return w.openFile()
@@ -99,7 +104,7 @@ func (w *FileLogWriter) Write(p []byte) (int, error) {
 	if w.needRotate() {
 		w.writeMtx.Lock()
 		if w.needRotate() {
-			if err := w.Rotate(); err != nil {
+			if err := w.doRotate(); err != nil {
 				fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.filename, err)
 				w.writeMtx.Unlock()
 				return 0, err
@@ -109,7 +114,7 @@ func (w *FileLogWriter) Write(p []byte) (int, error) {
 	}
 
 	// Perform the write
-	n, err := w.file.Write(p)
+	n, err := w.file.Get().(*os.File).Write(p)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "FileLogWriter(%q): %s\n", w.filename, err)
 		return n, err
@@ -118,5 +123,7 @@ func (w *FileLogWriter) Write(p []byte) (int, error) {
 }
 
 func (w *FileLogWriter) Close() {
-	w.file.Close()
+	if fd := w.file.Get().(*os.File); fd != nil {
+		fd.Close()
+	}
 }
