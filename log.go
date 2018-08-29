@@ -14,7 +14,9 @@ var setLogLevel func(Level)
 var log_option = defaultLogOption()
 
 const (
-	NormFormat = "%{level}: [%{time:2006-01-02 15:04:05.000}][gid:%{goroutineid}/gcnt:%{goroutinecount}][%{shortfile}][%{message}]"
+	NormFormat        = "%{level} [%{time:2006-01-02 15:04:05.000}][%{shortfile}] %{message}"
+	DebugFormat       = "%{level} [%{time:2006-01-02 15:04:05.000}][gid:%{goroutineid}/gcnt:%{goroutinecount}][%{shortfile}] %{message}"
+	SimpleColorFormat = "\033[1;33m%{level}\033[0m %{time:2006-01-02 15:04:05.000} \033[0;34m%{shortfile}\033[0m \033[0;32m%{message}\033[0m"
 )
 
 type Level int
@@ -217,66 +219,42 @@ func Info(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	if isformatLog(args...) {
-		lg.Infof(args[0].(string), args[1:]...)
-	} else {
-		lg.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
-	}
+	lg.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Warning(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	if isformatLog(args...) {
-		lg.Warningf(args[0].(string), args[1:]...)
-	} else {
-		lg.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
-	}
+	lg.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Critical(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	if isformatLog(args...) {
-		lg.Criticalf(args[0].(string), args[1:]...)
-	} else {
-		lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
-	}
+	lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Error(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	if isformatLog(args...) {
-		lg.Errorf(args[0].(string), args[1:]...)
-	} else {
-		lg.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
-	}
+	lg.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Debug(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	if isformatLog(args...) {
-		lg.Debugf(args[0].(string), args[1:]...)
-	} else {
-		lg.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
-	}
+	lg.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Notice(args ...interface{}) {
 	if lg == nil {
 		return
 	}
-	if isformatLog(args...) {
-		lg.Noticef(args[0].(string), args[1:]...)
-	} else {
-		lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
-	}
+	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func SetLogLevel(lvl Level) {
