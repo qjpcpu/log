@@ -270,3 +270,11 @@ func SetLogLevel(lvl Level) {
 func GetLogLevel() Level {
 	return log_option.Level
 }
+
+func Close() {
+	for _, wc := range log_option.files {
+		if wc != nil {
+			wc.Close()
+		}
+	}
+}
