@@ -5,9 +5,7 @@ import (
 )
 
 func TestLog(t *testing.T) {
-	opt := defaultLogOption()
-	opt.Format = SimpleColorFormat
-	InitLog(opt)
+	InitLog(CliLogOption())
 	Info("gogogo")
 	Infof("good luck%s %%", "ABC")
 	Info("love you", "jjj")
