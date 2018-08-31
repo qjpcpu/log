@@ -5,7 +5,6 @@ import (
 )
 
 func TestLog(t *testing.T) {
-	InitLog(CliLogOption())
 	Info("gogogo")
 	Infof("good luck%s %%", "ABC")
 	Info("love you", "jjj")

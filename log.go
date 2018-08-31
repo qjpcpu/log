@@ -69,16 +69,9 @@ type LogOption struct {
 func defaultLogOption() LogOption {
 	return LogOption{
 		Level:          DEBUG,
-		Format:         NormFormat,
+		Format:         SimpleColorFormat,
 		RotateType:     filelog.RotateDaily,
 		CreateShortcut: true,
-	}
-}
-
-func CliLogOption() LogOption {
-	return LogOption{
-		Level:  DEBUG,
-		Format: CliFormat,
 	}
 }
 
