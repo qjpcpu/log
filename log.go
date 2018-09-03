@@ -99,12 +99,18 @@ func InitLog(opt LogOption) {
 		// mkdir log dir
 		os.MkdirAll(filepath.Dir(opt.LogFile), 0777)
 		filename := opt.LogFile
-		info_log_fp, err := filelog.NewWriter(filename, opt.RotateType, opt.CreateShortcut)
+		info_log_fp, err := filelog.NewWriter(filename, func(fopt *filelog.Option) {
+			fopt.RotateType = opt.RotateType
+			fopt.CreateShortcut = opt.CreateShortcut
+		})
 		if err != nil {
 			syslog.Fatalf("open file[%s] failed[%s]", filename, err)
 		}
 
-		err_log_fp, err := filelog.NewWriter(filename+".wf", opt.RotateType, opt.CreateShortcut)
+		err_log_fp, err := filelog.NewWriter(filename+".wf", func(fopt *filelog.Option) {
+			fopt.RotateType = opt.RotateType
+			fopt.CreateShortcut = opt.CreateShortcut
+		})
 		if err != nil {
 			syslog.Fatalf("open file[%s.wf] failed[%s]", filename, err)
 		}
