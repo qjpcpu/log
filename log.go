@@ -7,6 +7,7 @@ import (
 	syslog "log"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 )
 
@@ -189,6 +190,13 @@ func Criticalf(format string, args ...interface{}) {
 	lg.Criticalf(format, args...)
 }
 
+func Fatalf(format string, args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Fatalf(format, args...)
+}
+
 func Errorf(format string, args ...interface{}) {
 	if lg == nil {
 		return
@@ -245,6 +253,13 @@ func Critical(args ...interface{}) {
 	lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+func Fatal(args ...interface{}) {
+	if lg == nil {
+		return
+	}
+	lg.Fatalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
 func Error(args ...interface{}) {
 	if lg == nil {
 		return
@@ -264,6 +279,26 @@ func Notice(args ...interface{}) {
 		return
 	}
 	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+}
+
+func MustNoErr(err error) {
+	if err != nil {
+		stack_info := debug.Stack()
+		start := 0
+		count := 0
+		for i, ch := range stack_info {
+			if ch == '\n' {
+				if count == 0 {
+					start = i
+				} else if count == 4 {
+					stack_info = append(stack_info[0:start+1], stack_info[i+1:]...)
+					break
+				}
+				count++
+			}
+		}
+		lg.Fatalf("%v\n%s", err, stack_info)
+	}
 }
 
 func SetLogLevel(lvl Level) {
