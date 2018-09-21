@@ -297,7 +297,7 @@ func MustNoErr(err error) {
 				count++
 			}
 		}
-		lg.Fatalf("%v\nMustNoErr fail: %s", err, stack_info)
+		lg.Fatalf("%v\nMustNoErr fail, %s", err, stack_info)
 	}
 }
 
