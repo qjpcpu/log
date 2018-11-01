@@ -281,7 +281,7 @@ func Notice(args ...interface{}) {
 	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
-func MustNoErr(err error) {
+func MustNoErr(err error, desc ...string) {
 	if err != nil {
 		stack_info := debug.Stack()
 		start := 0
@@ -297,7 +297,11 @@ func MustNoErr(err error) {
 				count++
 			}
 		}
-		lg.Fatalf("%v\nMustNoErr fail, %s", err, stack_info)
+		var extra string
+		if len(desc) > 0 && desc[0] != "" {
+			extra = "[" + desc[0] + "]"
+		}
+		lg.Fatalf("%s%v\nMustNoErr fail, %s", extra, err, stack_info)
 	}
 }
 
