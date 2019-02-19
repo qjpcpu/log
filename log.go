@@ -67,6 +67,45 @@ type LogOption struct {
 	files          []io.WriteCloser
 }
 
+type LogOption struct {
+	LogFile        string
+	Level          Level
+	Format         string
+	RotateType     filelog.RotateType
+	CreateShortcut bool
+	files          []io.WriteCloser
+}
+
+func GetLogOption() *LogOption {
+	opt := defaultLogOption()
+	return &opt
+}
+
+func (lo *LogOption) SetFile(filename string) *LogOption {
+	lo.LogFile = filename
+	return lo
+}
+
+func (lo *LogOption) SetLevel(level string) *LogOption {
+	lo.Level = ParseLogLevel(level)
+	return lo
+}
+
+func (lo *LogOption) SetFormat(format string) *LogOption {
+	lo.Format = format
+	return lo
+}
+
+func (lo *LogOption) SetRotate(rt filelog.RotateType) *LogOption {
+	lo.RotateType = rt
+	return lo
+}
+
+func (lo *LogOption) SetShortcut(create bool) *LogOption {
+	lo.CreateShortcut = create
+	return lo
+}
+
 func defaultLogOption() LogOption {
 	return LogOption{
 		Level:          DEBUG,
