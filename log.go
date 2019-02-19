@@ -67,16 +67,21 @@ type LogOption struct {
 	files          []io.WriteCloser
 }
 
-type LogOption struct {
-	LogFile        string
-	Level          Level
-	Format         string
-	RotateType     filelog.RotateType
-	CreateShortcut bool
-	files          []io.WriteCloser
-}
+// RotateType 轮转类型
+type RotateType int
 
-func GetLogOption() *LogOption {
+const (
+	// RotateDaily 按天轮转
+	RotateDaily RotateType = iota
+	// RotateHourly 按小时轮转
+	RotateHourly
+	// RotateWeekly 按周轮转
+	RotateWeekly
+	// RotateNone 不切割日志
+	RotateNone
+)
+
+func LogBuilder() *LogOption {
 	opt := defaultLogOption()
 	return &opt
 }
@@ -96,14 +101,18 @@ func (lo *LogOption) SetFormat(format string) *LogOption {
 	return lo
 }
 
-func (lo *LogOption) SetRotate(rt filelog.RotateType) *LogOption {
-	lo.RotateType = rt
+func (lo *LogOption) SetRotate(rt RotateType) *LogOption {
+	lo.RotateType = filelog.RotateType(rt)
 	return lo
 }
 
 func (lo *LogOption) SetShortcut(create bool) *LogOption {
 	lo.CreateShortcut = create
 	return lo
+}
+
+func (lo *LogOption) Submit() {
+	InitLog(*lo)
 }
 
 func defaultLogOption() LogOption {
