@@ -18,7 +18,7 @@ var log_option = defaultLogOption()
 
 const (
 	NormFormat        = "%{level} %{time:2006-01-02 15:04:05.000} %{shortfile} %{message}"
-	DebugFormat       = "%{level} %{time:2006-01-02 15:04:05.000} gid:%{goroutineid}/gcnt:%{goroutinecount} %{shortfile} %{message}"
+	DebugFormat       = "%{level} %{time:2006-01-02 15:04:05.000} grtid:%{goroutineid}/gcnt:%{goroutinecount} %{shortfile} %{message}"
 	SimpleColorFormat = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05.000}\033[0m \033[0;34m%{shortfile}\033[0m \033[0;32m%{message}\033[0m"
 	CliFormat         = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05}\033[0m \033[0;32m%{message}\033[0m"
 )

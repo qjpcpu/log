@@ -307,7 +307,7 @@ func (f *stringFormatter) Format(calldepth int, r *Record, output io.Writer) err
 				v = program
 				break
 			case fmtVerbGoroutineId:
-				v = getGoroutineId()
+				v = GetGoroutineID()
 				break
 			case fmtVerbGoroutineCount:
 				v = runtime.NumGoroutine()
@@ -423,16 +423,4 @@ func (bf *backendFormatter) Log(level Level, calldepth int, r *Record) error {
 	r2 := *r
 	r2.formatter = bf.f
 	return bf.b.Log(level, calldepth+1, &r2)
-}
-
-// Should only used for debug
-func getGoroutineId() string {
-	buf := make([]byte, 1<<16)
-	runtime.Stack(buf, false)
-	tokens := strings.Split(string(buf), " ")
-	if len(tokens) > 1 {
-		return tokens[1]
-	} else {
-		return ""
-	}
 }
