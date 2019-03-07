@@ -20,6 +20,7 @@ const (
 	NormFormat        = "%{level} %{time:2006-01-02 15:04:05.000} %{shortfile} %{message}"
 	DebugFormat       = "%{level} %{time:2006-01-02 15:04:05.000} grtid:%{goroutineid}/gcnt:%{goroutinecount} %{shortfile} %{message}"
 	SimpleColorFormat = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05.000}\033[0m \033[0;34m%{shortfile}\033[0m \033[0;32m%{message}\033[0m"
+	DebugColorFormat  = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05.000}\033[0m \033[0;34m%{shortfile}\033[0m \033[0;32mgrtid:%{goroutineid}/gcnt:%{goroutinecount}\033[0m %{message}"
 	CliFormat         = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05}\033[0m \033[0;32m%{message}\033[0m"
 )
 
@@ -118,7 +119,7 @@ func (lo *LogOption) Submit() {
 func defaultLogOption() LogOption {
 	return LogOption{
 		Level:          DEBUG,
-		Format:         SimpleColorFormat,
+		Format:         DebugColorFormat,
 		RotateType:     filelog.RotateDaily,
 		CreateShortcut: true,
 	}
