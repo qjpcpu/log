@@ -14,7 +14,7 @@ import (
 // package global variables
 var lg *logging.Logger
 var setLogLevel func(Level)
-var log_option = defaultLogOption()
+var logOption = defaultLogOption()
 
 const (
 	NormFormat        = "%{level} %{time:2006-01-02 15:04:05.000} %{shortfile} %{message}"
@@ -39,7 +39,7 @@ func (lvl Level) loggingLevel() logging.Level {
 	return logging.Level(lvl - 1)
 }
 
-func ParseLogLevel(lstr string) Level {
+func parseLogLevel(lstr string) Level {
 	lstr = strings.ToLower(lstr)
 	switch lstr {
 	case "critical":
@@ -59,12 +59,14 @@ func ParseLogLevel(lstr string) Level {
 	}
 }
 
+// LogOption log config options
 type LogOption struct {
 	LogFile        string
 	Level          Level
 	Format         string
 	RotateType     filelog.RotateType
 	CreateShortcut bool
+	ErrorSuffix    string
 	files          []io.WriteCloser
 }
 
@@ -82,61 +84,83 @@ const (
 	RotateNone
 )
 
-func LogBuilder() *LogOption {
+// GetBuilder log builder
+func GetBuilder() *LogOption {
 	opt := defaultLogOption()
 	return &opt
 }
 
+// SetFile set log file
 func (lo *LogOption) SetFile(filename string) *LogOption {
 	lo.LogFile = filename
 	return lo
 }
 
+// SetLevel set log level
 func (lo *LogOption) SetLevel(level string) *LogOption {
-	lo.Level = ParseLogLevel(level)
+	lo.Level = parseLogLevel(level)
 	return lo
 }
 
+// SetTypedLevel set log level
+func (lo *LogOption) SetTypedLevel(level Level) *LogOption {
+	lo.Level = level
+	return lo
+}
+
+// SetFormat set log format
 func (lo *LogOption) SetFormat(format string) *LogOption {
 	lo.Format = format
 	return lo
 }
 
+// SetRotate set rotate type default daily
 func (lo *LogOption) SetRotate(rt RotateType) *LogOption {
 	lo.RotateType = filelog.RotateType(rt)
 	return lo
 }
 
+// SetShortcut whether create shorcut when rotate
 func (lo *LogOption) SetShortcut(create bool) *LogOption {
 	lo.CreateShortcut = create
 	return lo
 }
 
+// SetErrorLogSuffix set error log suffix,default is wf
+func (lo *LogOption) SetErrorLogSuffix(sf string) *LogOption {
+	lo.ErrorSuffix = sf
+	return lo
+}
+
+// Submit use this buider options
 func (lo *LogOption) Submit() {
-	InitLog(*lo)
+	if lo.ErrorSuffix == "" {
+		lo.ErrorSuffix = "wf"
+	}
+	initLog(*lo)
 }
 
 func defaultLogOption() LogOption {
 	return LogOption{
 		Level:          DEBUG,
 		Format:         DebugColorFormat,
-		RotateType:     filelog.RotateDaily,
-		CreateShortcut: true,
+		RotateType:     filelog.RotateNone,
+		CreateShortcut: false,
 	}
 }
 
 func init() {
-	InitLog(defaultLogOption())
+	initLog(defaultLogOption())
 }
 
-func InitLog(opt LogOption) {
-	if len(log_option.files) > 0 {
-		for _, f := range log_option.files {
+func initLog(opt LogOption) {
+	if len(logOption.files) > 0 {
+		for _, f := range logOption.files {
 			if f != nil {
 				f.Close()
 			}
 		}
-		log_option.files = nil
+		logOption.files = nil
 	}
 	if opt.Format == "" {
 		opt.Format = NormFormat
@@ -157,7 +181,7 @@ func InitLog(opt LogOption) {
 			syslog.Fatalf("open file[%s] failed[%s]", filename, err)
 		}
 
-		err_log_fp, err := filelog.NewWriter(filename+".wf", func(fopt *filelog.Option) {
+		err_log_fp, err := filelog.NewWriter(filename+"."+opt.ErrorSuffix, func(fopt *filelog.Option) {
 			fopt.RotateType = opt.RotateType
 			fopt.CreateShortcut = opt.CreateShortcut
 		})
@@ -194,28 +218,8 @@ func InitLog(opt LogOption) {
 		}
 	}
 	lg = logging.MustGetLogger("")
-	lg.ExtraCalldepth += 1
-	log_option = opt
-}
-
-func isformat(format string) bool {
-	end := len(format)
-	unfound := -2
-	var istag int = unfound
-	for i := 0; i < end; i++ {
-		if format[i] == '%' {
-			if istag == i-1 {
-				istag = unfound
-			} else {
-				istag = i
-			}
-		} else {
-			if istag == i-1 {
-				return true
-			}
-		}
-	}
-	return false
+	lg.ExtraCalldepth++
+	logOption = opt
 }
 
 func Infof(format string, args ...interface{}) {
@@ -267,20 +271,6 @@ func Noticef(format string, args ...interface{}) {
 	lg.Noticef(format, args...)
 }
 
-func isformatLog(args ...interface{}) bool {
-	for loop := true; loop; loop = false {
-		if len(args) <= 1 {
-			break
-		}
-		format, ok := args[0].(string)
-		if !ok {
-			break
-		}
-		return isformat(format)
-	}
-	return false
-}
-
 func Info(args ...interface{}) {
 	if lg == nil {
 		return
@@ -330,6 +320,7 @@ func Notice(args ...interface{}) {
 	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// MustNoErr panic when err occur, should only used in test
 func MustNoErr(err error, desc ...string) {
 	if err != nil {
 		stack_info := debug.Stack()
@@ -354,19 +345,22 @@ func MustNoErr(err error, desc ...string) {
 	}
 }
 
+// SetLogLevel dynamic set log level
 func SetLogLevel(lvl Level) {
 	if setLogLevel != nil {
 		setLogLevel(lvl)
-		log_option.Level = lvl
+		logOption.Level = lvl
 	}
 }
 
+// GetLogLevel get current log level
 func GetLogLevel() Level {
-	return log_option.Level
+	return logOption.Level
 }
 
+// Close close log file
 func Close() {
-	for _, wc := range log_option.files {
+	for _, wc := range logOption.files {
 		if wc != nil {
 			wc.Close()
 		}
