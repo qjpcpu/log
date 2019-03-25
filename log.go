@@ -66,7 +66,7 @@ type LogOption struct {
 	Format         string
 	RotateType     filelog.RotateType
 	CreateShortcut bool
-	ErrorSuffix    string
+	ErrorLogFile   string
 	files          []io.WriteCloser
 }
 
@@ -126,16 +126,16 @@ func (lo *LogOption) SetShortcut(create bool) *LogOption {
 	return lo
 }
 
-// SetErrorLogSuffix set error log suffix,default is wf
-func (lo *LogOption) SetErrorLogSuffix(sf string) *LogOption {
-	lo.ErrorSuffix = sf
+// SetErrorLog set error log suffix,default is wf
+func (lo *LogOption) SetErrorLog(f string) *LogOption {
+	lo.ErrorLogFile = f
 	return lo
 }
 
 // Submit use this buider options
 func (lo *LogOption) Submit() {
-	if lo.ErrorSuffix == "" {
-		lo.ErrorSuffix = "wf"
+	if lo.ErrorLogFile == "" {
+		lo.ErrorLogFile = lo.LogFile + ".error"
 	}
 	initLog(*lo)
 }
@@ -172,6 +172,7 @@ func initLog(opt LogOption) {
 	if opt.LogFile != "" {
 		// mkdir log dir
 		os.MkdirAll(filepath.Dir(opt.LogFile), 0777)
+		os.MkdirAll(filepath.Dir(opt.ErrorLogFile), 0777)
 		filename := opt.LogFile
 		info_log_fp, err := filelog.NewWriter(filename, func(fopt *filelog.Option) {
 			fopt.RotateType = opt.RotateType
@@ -181,7 +182,7 @@ func initLog(opt LogOption) {
 			syslog.Fatalf("open file[%s] failed[%s]", filename, err)
 		}
 
-		err_log_fp, err := filelog.NewWriter(filename+"."+opt.ErrorSuffix, func(fopt *filelog.Option) {
+		err_log_fp, err := filelog.NewWriter(opt.ErrorLogFile, func(fopt *filelog.Option) {
 			fopt.RotateType = opt.RotateType
 			fopt.CreateShortcut = opt.CreateShortcut
 		})
