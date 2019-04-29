@@ -9,12 +9,25 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"sync"
 )
 
+type moduleLoggers struct {
+	loggers map[string]*logWrapper
+	*sync.RWMutex
+}
+
+type logWrapper struct {
+	*logging.Logger
+	option        *LogOption
+	leveldBackend logging.LeveledBackend
+}
+
 // package global variables
-var lg *logging.Logger
-var setLogLevel func(Level)
-var logOption = defaultLogOption()
+var (
+	mloggers   *moduleLoggers
+	defaultLgr *logWrapper
+)
 
 const (
 	NormFormat        = "%{level} %{time:2006-01-02 15:04:05.000} %{shortfile} %{message}"
@@ -68,6 +81,7 @@ type LogOption struct {
 	CreateShortcut bool
 	ErrorLogFile   string
 	files          []io.WriteCloser
+	module         string
 }
 
 // RotateType 轮转类型
@@ -83,6 +97,13 @@ const (
 	// RotateNone 不切割日志
 	RotateNone
 )
+
+// GetMBuilder module log builder
+func GetMBuilder(m string) *LogOption {
+	opt := defaultLogOption()
+	opt.module = m
+	return &opt
+}
 
 // GetBuilder log builder
 func GetBuilder() *LogOption {
@@ -134,10 +155,22 @@ func (lo *LogOption) SetErrorLog(f string) *LogOption {
 
 // Submit use this buider options
 func (lo *LogOption) Submit() {
-	if lo.ErrorLogFile == "" {
-		lo.ErrorLogFile = lo.LogFile + ".error"
+	lgr := createLogger(lo)
+	if lo.module == "" {
+		defaultLgr = lgr
+	} else {
+		lgr.ExtraCalldepth--
+		mloggers.Lock()
+		defer mloggers.Unlock()
+		mloggers.loggers[lo.module] = lgr
 	}
-	initLog(*lo)
+}
+
+// M module log
+func M(m string) *logging.Logger {
+	mloggers.RLock()
+	defer mloggers.RUnlock()
+	return mloggers.loggers[m].Logger
 }
 
 func defaultLogOption() LogOption {
@@ -146,193 +179,196 @@ func defaultLogOption() LogOption {
 		Format:         DebugColorFormat,
 		RotateType:     filelog.RotateNone,
 		CreateShortcut: false,
+		module:         "",
 	}
 }
 
 func init() {
-	initLog(defaultLogOption())
+	mloggers = &moduleLoggers{
+		RWMutex: new(sync.RWMutex),
+		loggers: make(map[string]*logWrapper),
+	}
+	dopt := defaultLogOption()
+	defaultLgr = createLogger(&dopt)
 }
 
-func initLog(opt LogOption) {
-	if len(logOption.files) > 0 {
-		for _, f := range logOption.files {
-			if f != nil {
-				f.Close()
-			}
-		}
-		logOption.files = nil
-	}
+func createLogger(opt *LogOption) *logWrapper {
 	if opt.Format == "" {
 		opt.Format = NormFormat
 	}
 	if opt.Level <= 0 {
 		opt.Level = INFO
 	}
+	lgr := logging.MustGetLogger(opt.module)
 	format := logging.MustStringFormatter(opt.Format)
+
+	var leveldBackend logging.LeveledBackend
 	if opt.LogFile != "" {
+		var backends []logging.LeveledBackend
 		// mkdir log dir
 		os.MkdirAll(filepath.Dir(opt.LogFile), 0777)
 		os.MkdirAll(filepath.Dir(opt.ErrorLogFile), 0777)
 		filename := opt.LogFile
-		info_log_fp, err := filelog.NewWriter(filename, func(fopt *filelog.Option) {
+		infoLogFp, err := filelog.NewWriter(filename, func(fopt *filelog.Option) {
 			fopt.RotateType = opt.RotateType
 			fopt.CreateShortcut = opt.CreateShortcut
 		})
 		if err != nil {
 			syslog.Fatalf("open file[%s] failed[%s]", filename, err)
 		}
+		backendInfo := logging.NewLogBackend(infoLogFp, "", 0)
+		backendInfoFormatter := logging.NewBackendFormatter(backendInfo, format)
+		backendInfoLeveld := logging.AddModuleLevel(backendInfoFormatter)
+		backendInfoLeveld.SetLevel(opt.Level.loggingLevel(), "")
+		backends = append(backends, backendInfoLeveld)
+		opt.files = append(opt.files, infoLogFp)
 
-		err_log_fp, err := filelog.NewWriter(opt.ErrorLogFile, func(fopt *filelog.Option) {
-			fopt.RotateType = opt.RotateType
-			fopt.CreateShortcut = opt.CreateShortcut
-		})
-		if err != nil {
-			syslog.Fatalf("open file[%s.wf] failed[%s]", filename, err)
+		if opt.ErrorLogFile != "" && opt.ErrorLogFile != opt.LogFile {
+			errLogFp, err := filelog.NewWriter(opt.ErrorLogFile, func(fopt *filelog.Option) {
+				fopt.RotateType = opt.RotateType
+				fopt.CreateShortcut = opt.CreateShortcut
+			})
+			if err != nil {
+				syslog.Fatalf("open file[%s.wf] failed[%s]", filename, err)
+			}
+
+			backendErr := logging.NewLogBackend(errLogFp, "", 0)
+			backendErrFormatter := logging.NewBackendFormatter(backendErr, format)
+			backendErrLeveld := logging.AddModuleLevel(backendErrFormatter)
+			backendErrLeveld.SetLevel(logging.ERROR, "")
+			backends = append(backends, backendErrLeveld)
+			opt.files = append(opt.files, errLogFp)
 		}
-		opt.files = []io.WriteCloser{info_log_fp, err_log_fp}
-
-		backend_info := logging.NewLogBackend(info_log_fp, "", 0)
-		backend_err := logging.NewLogBackend(err_log_fp, "", 0)
-		backend_info_formatter := logging.NewBackendFormatter(backend_info, format)
-		backend_err_formatter := logging.NewBackendFormatter(backend_err, format)
-
-		backend_info_leveld := logging.AddModuleLevel(backend_info_formatter)
-		backend_info_leveld.SetLevel(opt.Level.loggingLevel(), "")
-
-		backend_err_leveld := logging.AddModuleLevel(backend_err_formatter)
-		backend_err_leveld.SetLevel(logging.ERROR, "")
-		logging.SetBackend(backend_info_leveld, backend_err_leveld)
-
-		// set log level handler
-		setLogLevel = func(lvl Level) {
-			backend_info_leveld.SetLevel(lvl.loggingLevel(), "")
+		var bl []logging.Backend
+		for _, lb := range backends {
+			bl = append(bl, lb)
 		}
+		ml := logging.MultiLogger(bl...)
+		leveldBackend = ml
+		lgr.SetBackend(ml)
 	} else {
 		backend1 := logging.NewLogBackend(os.Stderr, "", 0)
 		backend1Formatter := logging.NewBackendFormatter(backend1, format)
 		backend1Leveled := logging.AddModuleLevel(backend1Formatter)
 		backend1Leveled.SetLevel(opt.Level.loggingLevel(), "")
-		logging.SetBackend(backend1Leveled)
-		// set log level handler
-		setLogLevel = func(lvl Level) {
-			backend1Leveled.SetLevel(lvl.loggingLevel(), "")
-		}
+		leveldBackend = backend1Leveled
+
+		lgr.SetBackend(backend1Leveled)
 	}
-	lg = logging.MustGetLogger("")
-	lg.ExtraCalldepth++
-	logOption = opt
+	lgr.ExtraCalldepth++
+	return &logWrapper{Logger: lgr, option: opt, leveldBackend: leveldBackend}
 }
 
 func Infof(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Infof(format, args...)
+	defaultLgr.Infof(format, args...)
 }
 
 func Warningf(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Warningf(format, args...)
+	defaultLgr.Warningf(format, args...)
 }
 
 func Criticalf(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Criticalf(format, args...)
+	defaultLgr.Criticalf(format, args...)
 }
 
 func Fatalf(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Fatalf(format, args...)
+	defaultLgr.Fatalf(format, args...)
 }
 
 func Errorf(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Errorf(format, args...)
+	defaultLgr.Errorf(format, args...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Debugf(format, args...)
+	defaultLgr.Debugf(format, args...)
 }
 
 func Noticef(format string, args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Noticef(format, args...)
+	defaultLgr.Noticef(format, args...)
 }
 
 func Info(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Warning(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Critical(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Fatal(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Fatalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Fatalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Error(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Debug(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 func Notice(args ...interface{}) {
-	if lg == nil {
+	if defaultLgr == nil {
 		return
 	}
-	lg.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
+	defaultLgr.Noticef(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
 // MustNoErr panic when err occur, should only used in test
 func MustNoErr(err error, desc ...string) {
 	if err != nil {
-		stack_info := debug.Stack()
+		stackInfo := debug.Stack()
 		start := 0
 		count := 0
-		for i, ch := range stack_info {
+		for i, ch := range stackInfo {
 			if ch == '\n' {
 				if count == 0 {
 					start = i
 				} else if count == 4 {
-					stack_info = append(stack_info[0:start+1], stack_info[i+1:]...)
+					stackInfo = append(stackInfo[0:start+1], stackInfo[i+1:]...)
 					break
 				}
 				count++
@@ -342,28 +378,6 @@ func MustNoErr(err error, desc ...string) {
 		if len(desc) > 0 && desc[0] != "" {
 			extra = "[" + desc[0] + "]"
 		}
-		lg.Fatalf("%s%v\nMustNoErr fail, %s", extra, err, stack_info)
-	}
-}
-
-// SetLogLevel dynamic set log level
-func SetLogLevel(lvl Level) {
-	if setLogLevel != nil {
-		setLogLevel(lvl)
-		logOption.Level = lvl
-	}
-}
-
-// GetLogLevel get current log level
-func GetLogLevel() Level {
-	return logOption.Level
-}
-
-// Close close log file
-func Close() {
-	for _, wc := range logOption.files {
-		if wc != nil {
-			wc.Close()
-		}
+		defaultLgr.Fatalf("%s%v\nMustNoErr fail, %s", extra, err, stackInfo)
 	}
 }
