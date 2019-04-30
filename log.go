@@ -1,6 +1,7 @@
 package log
 
 import (
+	"errors"
 	"github.com/qjpcpu/filelog"
 	"github.com/qjpcpu/log/logging"
 	"io"
@@ -30,21 +31,33 @@ var (
 )
 
 const (
-	NormFormat        = "%{level} %{time:2006-01-02 15:04:05.000} %{shortfile} %{message}"
-	DebugFormat       = "%{level} %{time:2006-01-02 15:04:05.000} grtid:%{goroutineid}/gcnt:%{goroutinecount} %{shortfile} %{message}"
+	// NormFormat without color
+	NormFormat = "%{level} %{time:2006-01-02 15:04:05.000} %{shortfile} %{message}"
+	// DebugFormat with color
+	DebugFormat = "%{level} %{time:2006-01-02 15:04:05.000} grtid:%{goroutineid}/gcnt:%{goroutinecount} %{shortfile} %{message}"
+	// SimpleColorFormat simple format with color
 	SimpleColorFormat = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05.000}\033[0m \033[0;34m%{shortfile}\033[0m \033[0;32m%{message}\033[0m"
-	DebugColorFormat  = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05.000}\033[0m \033[0;34m%{shortfile}\033[0m \033[0;32mgrtid:%{goroutineid}/gcnt:%{goroutinecount}\033[0m %{message}"
-	CliFormat         = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05}\033[0m \033[0;32m%{message}\033[0m"
+	// DebugColorFormat with color
+	DebugColorFormat = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05.000}\033[0m \033[0;34m%{shortfile}\033[0m \033[0;32mgrtid:%{goroutineid}/gcnt:%{goroutinecount}\033[0m %{message}"
+	// CliFormat simple format
+	CliFormat = "\033[1;33m%{level}\033[0m \033[1;36m%{time:2006-01-02 15:04:05}\033[0m \033[0;32m%{message}\033[0m"
 )
 
+// Level log level
 type Level int
 
 const (
+	// CRITICAL level
 	CRITICAL Level = iota + 1
+	// ERROR level
 	ERROR
+	// WARNING level
 	WARNING
+	// NOTICE level
 	NOTICE
+	// INFO level
 	INFO
+	// DEBUG level
 	DEBUG
 )
 
@@ -220,6 +233,7 @@ func createLogger(opt *LogOption) *logWrapper {
 		backendInfoFormatter := logging.NewBackendFormatter(backendInfo, format)
 		backendInfoLeveld := logging.AddModuleLevel(backendInfoFormatter)
 		backendInfoLeveld.SetLevel(opt.Level.loggingLevel(), "")
+		leveldBackend = backendInfoLeveld
 		backends = append(backends, backendInfoLeveld)
 		opt.files = append(opt.files, infoLogFp)
 
@@ -244,7 +258,6 @@ func createLogger(opt *LogOption) *logWrapper {
 			bl = append(bl, lb)
 		}
 		ml := logging.MultiLogger(bl...)
-		leveldBackend = ml
 		lgr.SetBackend(ml)
 	} else {
 		backend1 := logging.NewLogBackend(os.Stderr, "", 0)
@@ -259,6 +272,7 @@ func createLogger(opt *LogOption) *logWrapper {
 	return &logWrapper{Logger: lgr, option: opt, leveldBackend: leveldBackend}
 }
 
+// Infof write leveled log
 func Infof(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -266,6 +280,7 @@ func Infof(format string, args ...interface{}) {
 	defaultLgr.Infof(format, args...)
 }
 
+// Warningf write leveled log
 func Warningf(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -273,6 +288,7 @@ func Warningf(format string, args ...interface{}) {
 	defaultLgr.Warningf(format, args...)
 }
 
+// Criticalf write leveled log
 func Criticalf(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -280,6 +296,7 @@ func Criticalf(format string, args ...interface{}) {
 	defaultLgr.Criticalf(format, args...)
 }
 
+// Fatalf write leveled log
 func Fatalf(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -287,6 +304,7 @@ func Fatalf(format string, args ...interface{}) {
 	defaultLgr.Fatalf(format, args...)
 }
 
+// Errorf write leveled log
 func Errorf(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -294,6 +312,7 @@ func Errorf(format string, args ...interface{}) {
 	defaultLgr.Errorf(format, args...)
 }
 
+// Debugf write leveled log
 func Debugf(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -301,6 +320,7 @@ func Debugf(format string, args ...interface{}) {
 	defaultLgr.Debugf(format, args...)
 }
 
+// Noticef write leveled log
 func Noticef(format string, args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -308,6 +328,7 @@ func Noticef(format string, args ...interface{}) {
 	defaultLgr.Noticef(format, args...)
 }
 
+// Info write leveled log
 func Info(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -315,6 +336,7 @@ func Info(args ...interface{}) {
 	defaultLgr.Infof(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// Warning write leveled log
 func Warning(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -322,6 +344,7 @@ func Warning(args ...interface{}) {
 	defaultLgr.Warningf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// Critical write leveled log
 func Critical(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -329,6 +352,7 @@ func Critical(args ...interface{}) {
 	defaultLgr.Criticalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// Fatal write leveled log
 func Fatal(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -336,6 +360,7 @@ func Fatal(args ...interface{}) {
 	defaultLgr.Fatalf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// Error write leveled log
 func Error(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -343,6 +368,7 @@ func Error(args ...interface{}) {
 	defaultLgr.Errorf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// Debug write leveled log
 func Debug(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -350,6 +376,7 @@ func Debug(args ...interface{}) {
 	defaultLgr.Debugf(strings.TrimSpace(strings.Repeat("%+v ", len(args))), args...)
 }
 
+// Notice write leveld log
 func Notice(args ...interface{}) {
 	if defaultLgr == nil {
 		return
@@ -379,5 +406,73 @@ func MustNoErr(err error, desc ...string) {
 			extra = "[" + desc[0] + "]"
 		}
 		defaultLgr.Fatalf("%s%v\nMustNoErr fail, %s", extra, err, stackInfo)
+	}
+}
+
+// GetLogLevel default logger level
+func GetLogLevel() string {
+	switch defaultLgr.option.Level {
+	case CRITICAL:
+		return "critical"
+	case ERROR:
+		return "error"
+	case WARNING:
+		return "warning"
+	case NOTICE:
+		return "notice"
+	case INFO:
+		return "info"
+	case DEBUG:
+		return "debug"
+	default:
+		return ""
+	}
+}
+
+// SetLogLevel default logger level
+func SetLogLevel(lvl string) error {
+	tlvl := parseLogLevel(lvl)
+	defaultLgr.option.Level = tlvl
+	defaultLgr.leveldBackend.SetLevel(tlvl.loggingLevel(), "")
+	return nil
+}
+
+// SetMLogLevel set module log level
+func SetMLogLevel(module, lvl string) error {
+	mloggers.RLock()
+	defer mloggers.RUnlock()
+	wl, ok := mloggers.loggers[module]
+	if !ok {
+		return errors.New("no such module " + module)
+	}
+	tlvl := parseLogLevel(lvl)
+	wl.option.Level = tlvl
+	wl.leveldBackend.SetLevel(tlvl.loggingLevel(), "")
+	return nil
+}
+
+// GetMLogLevel get module log level
+func GetMLogLevel(module string) string {
+	mloggers.RLock()
+	defer mloggers.RUnlock()
+	wl, ok := mloggers.loggers[module]
+	if !ok {
+		return ""
+	}
+	switch wl.option.Level {
+	case CRITICAL:
+		return "critical"
+	case ERROR:
+		return "error"
+	case WARNING:
+		return "warning"
+	case NOTICE:
+		return "notice"
+	case INFO:
+		return "info"
+	case DEBUG:
+		return "debug"
+	default:
+		return ""
 	}
 }
